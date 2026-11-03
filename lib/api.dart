@@ -39,6 +39,23 @@ class Api {
 
   static Future<List<dynamic>> movimientos() async => await _get('$bancoUrl/cuenta/movimientos') as List<dynamic>;
 
+  /// `{500: 1, 100: 3}` → bonos firmados recién emitidos.
+  static Future<List<dynamic>> comprarBonos(Map<int, int> cantidades) async =>
+      await _post('$bancoUrl/bonos/comprar', cantidades.map((d, n) => MapEntry('$d', n))) as List<dynamic>;
+
+  /// Bonos EMITIDO del usuario según el banco (para resincronizar el wallet).
+  static Future<List<dynamic>> bonos() async => await _get('$bancoUrl/bonos') as List<dynamic>;
+
+  static String? _pemBanco;
+
+  /// PEM de la llave pública de firma del banco (cacheada).
+  static Future<String> llavePublicaBanco() async {
+    if (_pemBanco != null) return _pemBanco!;
+    final r = await http.get(Uri.parse('$bancoUrl/llave-publica')).timeout(_timeout);
+    if (r.statusCode != 200) throw ApiError(r.statusCode, 'No se pudo obtener la llave del banco');
+    return _pemBanco = r.body;
+  }
+
   static Future<void> _guardarToken(Future<dynamic> respuesta) async {
     _token = (await respuesta)['token'] as String;
     await _storage.write(key: _kToken, value: _token);

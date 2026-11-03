@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../main.dart';
 import 'login.dart';
+import 'wallet.dart';
 
 String dinero(num n) {
   final s = n.abs().toStringAsFixed(2).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
@@ -76,6 +77,17 @@ class _InicioPantallaState extends State<InicioPantalla> {
                       ]),
                     ),
                   ),
+                if (c != null) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.tonalIcon(
+                    icon: const Icon(Icons.account_balance_wallet),
+                    label: const Text('Mi wallet de bonos'),
+                    onPressed: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(builder: (_) => WalletPantalla(email: c['email'] as String)));
+                      _cargar(); // el saldo cambia al comprar bonos
+                    },
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text('Movimientos', style: t.titleMedium),
                 if (_movimientos.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Sin movimientos')),

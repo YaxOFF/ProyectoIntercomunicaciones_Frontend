@@ -46,19 +46,21 @@ class _TiendaPantallaState extends State<TiendaPantalla> {
     setState(() => n == 0 ? _carrito.remove(id) : _carrito[id] = n);
   }
 
-  Future<void> _pagar() async {
+  /// [alterado]: ataque de demo. Sube a $500 la denominación de un bono sin poder re-firmarlo → la tienda lo rechaza (400).
+  Future<void> _pagar({bool alterado = false}) async {
     final w = widget.wallet;
     final total = _total;
-    final bonos = elegirBonos(w.bonos, total);
-    if (bonos == null) {
+    final elegidos = elegirBonos(w.bonos, total);
+    if (elegidos == null) {
       return _aviso('Sin pago exacto',
           'Tus bonos (${dinero(w.total)}) no suman exactamente ${dinero(total)}. La tienda no da cambio: compra bonos de \$20 en tu wallet.');
     }
+    var bonos = elegidos;
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text('Pagar ${dinero(total)}'),
-        content: Text('Se usarán ${bonos.length} bonos: ${bonos.map((b) => '\$${b['denominacion']}').join(' + ')}.\n\n'
+        title: Text(alterado ? 'Ataque: bono alterado' : 'Pagar ${dinero(total)}'),
+        content: Text('${alterado ? 'El bono de \$${bonos.first['denominacion']} se enviará como \$500 con su firma original.\n\n' : ''}Se usarán ${bonos.length} bonos: ${bonos.map((b) => '\$${b['denominacion']}').join(' + ')}.\n\n'
             'El pago se cifra con AES-256-GCM y la llave con RSA-OAEP de la tienda.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
@@ -67,6 +69,7 @@ class _TiendaPantallaState extends State<TiendaPantalla> {
       ),
     );
     if (ok != true) return;
+    if (alterado) bonos = [{...bonos.first, 'denominacion': 500}, ...bonos.skip(1)];
     setState(() => _pagando = true);
     try {
       final llave = llaveDePem(await Api.llavePublicaTienda());
@@ -75,7 +78,7 @@ class _TiendaPantallaState extends State<TiendaPantalla> {
         'items': [for (final e in _carrito.entries) {'productoId': e.key, 'cantidad': e.value}],
         'bonos': bonos,
       }, llave);
-      _ultimoPaquete = paquete;
+      if (!alterado) _ultimoPaquete = paquete;
       final r = await Api.pagar(paquete);
       final gastadas = bonos.map((b) => b['serie']).toSet();
       await w.reemplazar(w.bonos.where((b) => !gastadas.contains(b['serie'])));
@@ -147,6 +150,12 @@ class _TiendaPantallaState extends State<TiendaPantalla> {
                       Text('${_carrito[p['id']] ?? 0}'),
                       IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () => _cambiar(p, 1)),
                     ]),
+                  ),
+                if (total > 0)
+                  TextButton.icon(
+                    icon: const Icon(Icons.gpp_bad_outlined),
+                    label: const Text('Pagar con un bono alterado (prueba de firma)'),
+                    onPressed: _pagando ? null : () => _pagar(alterado: true),
                   ),
                 if (_ultimoPaquete != null)
                   TextButton.icon(

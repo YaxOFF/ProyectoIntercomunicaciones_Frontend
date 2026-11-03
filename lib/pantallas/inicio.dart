@@ -81,7 +81,7 @@ class _InicioPantallaState extends State<InicioPantalla> {
                   const SizedBox(height: 12),
                   FilledButton.tonalIcon(
                     icon: const Icon(Icons.account_balance_wallet),
-                    label: const Text('Mi wallet de bonos'),
+                    label: const Text('Mi wallet y tienda'),
                     onPressed: () async {
                       await Navigator.of(context).push(MaterialPageRoute(builder: (_) => WalletPantalla(email: c['email'] as String)));
                       _cargar(); // el saldo cambia al comprar bonos

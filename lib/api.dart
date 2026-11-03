@@ -56,28 +56,49 @@ class Api {
     return _pemBanco = r.body;
   }
 
+  // ---- Tienda (sin JWT: la tienda no tiene cuentas, el pedido lleva el email dentro del paquete cifrado) ----
+
+  static Future<List<dynamic>> productos() async => await _get('$tiendaUrl/productos', auth: false) as List<dynamic>;
+
+  static Future<List<dynamic>> pedidos(String email) async =>
+      await _get('$tiendaUrl/pedidos?email=${Uri.encodeQueryComponent(email)}', auth: false) as List<dynamic>;
+
+  /// Paquete híbrido `{llaveCifrada, nonce, datos}` → `{pedidoId, total}`.
+  static Future<Map<String, dynamic>> pagar(Map<String, String> paquete) async =>
+      await _post('$tiendaUrl/compras', paquete, auth: false) as Map<String, dynamic>;
+
+  static String? _pemTienda;
+
+  /// PEM de la llave pública de cifrado de la tienda (cacheada).
+  static Future<String> llavePublicaTienda() async {
+    if (_pemTienda != null) return _pemTienda!;
+    final r = await http.get(Uri.parse('$tiendaUrl/llave-publica')).timeout(_timeout);
+    if (r.statusCode != 200) throw ApiError(r.statusCode, 'No se pudo obtener la llave de la tienda');
+    return _pemTienda = r.body;
+  }
+
   static Future<void> _guardarToken(Future<dynamic> respuesta) async {
     _token = (await respuesta)['token'] as String;
     await _storage.write(key: _kToken, value: _token);
   }
 
-  static Map<String, String> get _headers => {
+  static Map<String, String> _headers(bool auth) => {
         'Content-Type': 'application/json',
-        if (_token != null) 'Authorization': 'Bearer $_token',
+        if (auth && _token != null) 'Authorization': 'Bearer $_token',
       };
 
-  static Future<dynamic> _post(String url, Object body) async =>
-      _leer(await http.post(Uri.parse(url), headers: _headers, body: jsonEncode(body)).timeout(_timeout));
+  static Future<dynamic> _post(String url, Object body, {bool auth = true}) async =>
+      _leer(await http.post(Uri.parse(url), headers: _headers(auth), body: jsonEncode(body)).timeout(_timeout), auth);
 
-  static Future<dynamic> _get(String url) async =>
-      _leer(await http.get(Uri.parse(url), headers: _headers).timeout(_timeout));
+  static Future<dynamic> _get(String url, {bool auth = true}) async =>
+      _leer(await http.get(Uri.parse(url), headers: _headers(auth)).timeout(_timeout), auth);
 
   static const _timeout = Duration(seconds: 10);
 
-  static dynamic _leer(http.Response r) {
+  static dynamic _leer(http.Response r, bool auth) {
     final cuerpo = r.body.isEmpty ? null : jsonDecode(utf8.decode(r.bodyBytes));
     if (r.statusCode >= 200 && r.statusCode < 300) return cuerpo;
-    if (r.statusCode == 401 && _token != null) cerrarSesion(); // JWT expirado
+    if (auth && r.statusCode == 401 && _token != null) cerrarSesion(); // JWT expirado
     final msg = cuerpo is Map ? (cuerpo['error'] ?? cuerpo['title'] ?? 'Error ${r.statusCode}') : 'Error ${r.statusCode}';
     throw ApiError(r.statusCode, msg.toString());
   }

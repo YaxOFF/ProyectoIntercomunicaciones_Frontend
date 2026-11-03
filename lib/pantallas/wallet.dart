@@ -6,6 +6,7 @@ import '../cripto.dart';
 import '../main.dart';
 import '../wallet.dart';
 import 'comprar_bonos.dart';
+import 'tienda.dart';
 import 'inicio.dart' show dinero;
 
 class WalletPantalla extends StatefulWidget {
@@ -80,6 +81,15 @@ class _WalletPantallaState extends State<WalletPantalla> {
     return Scaffold(
       appBar: AppBar(title: const Text('Mi wallet'), actions: [
         if (w != null) IconButton(tooltip: 'Sincronizar con el banco', icon: const Icon(Icons.sync), onPressed: _sincronizar),
+        if (w != null)
+          IconButton(
+            tooltip: 'Ir a la tienda',
+            icon: const Icon(Icons.storefront),
+            onPressed: () async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => TiendaPantalla(wallet: w)));
+              if (mounted) setState(() {}); // bonos gastados
+            },
+          ),
       ]),
       floatingActionButton: w == null
           ? null

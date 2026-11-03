@@ -36,8 +36,8 @@ eliges la primera vez que lo abres (4-8 dígitos).
 - **Wallet** (pide PIN): bonos con chip **Firma válida**, verificada en la app con la llave pública del banco.
   Botón sincronizar trae los bonos `EMITIDO` del banco.
 - **Comprar bonos**: contador por denominación, descuenta saldo en el banco.
-- **Tienda**: catálogo y carrito. Al pagar elige la combinación **exacta** de bonos (la tienda no da cambio),
-  cifra el pedido y lo envía. Botones de demo: *Pagar con un bono alterado* y *Reenviar el último paquete*.
+- **Tienda**: catálogo y carrito. Al pagar elige los bonos que cubren el total con el menor excedente.
+  Cifra el pedido y lo envía. El cambio llega como bonos nuevos firmados por el banco y entra al wallet. Botones de demo: *Pagar con un bono alterado* y *Reenviar el último paquete*.
 - **Mis pedidos**: historial del comprador.
 
 ## Seguridad en la app

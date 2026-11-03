@@ -52,15 +52,16 @@ class _TiendaPantallaState extends State<TiendaPantalla> {
     final total = _total;
     final elegidos = elegirBonos(w.bonos, total);
     if (elegidos == null) {
-      return _aviso('Sin pago exacto',
-          'Tus bonos (${dinero(w.total)}) no suman exactamente ${dinero(total)}. La tienda no da cambio: compra bonos de \$20 en tu wallet.');
+      return _aviso('Bonos insuficientes', 'Tus bonos suman ${dinero(w.total)} y el total es ${dinero(total)}. Compra más bonos en tu wallet.');
     }
     var bonos = elegidos;
+    final excedente = bonos.fold<int>(0, (s, b) => s + (b['denominacion'] as int)) - total;
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
         title: Text(alterado ? 'Ataque: bono alterado' : 'Pagar ${dinero(total)}'),
-        content: Text('${alterado ? 'El bono de \$${bonos.first['denominacion']} se enviará como \$500 con su firma original.\n\n' : ''}Se usarán ${bonos.length} bonos: ${bonos.map((b) => '\$${b['denominacion']}').join(' + ')}.\n\n'
+        content: Text('${alterado ? 'El bono de \$${bonos.first['denominacion']} se enviará como \$500 con su firma original.\n\n' : ''}Se usarán ${bonos.length} bonos: ${bonos.map((b) => '\$${b['denominacion']}').join(' + ')}.\n'
+            '${excedente > 0 ? 'Cambio: ${dinero(excedente)} (el banco te lo devuelve en bonos nuevos).\n' : ''}\n'
             'El pago se cifra con AES-256-GCM y la llave con RSA-OAEP de la tienda.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancelar')),
@@ -82,9 +83,18 @@ class _TiendaPantallaState extends State<TiendaPantalla> {
       final r = await Api.pagar(paquete);
       final gastadas = bonos.map((b) => b['serie']).toSet();
       await w.reemplazar(w.bonos.where((b) => !gastadas.contains(b['serie'])));
+      final cambio = r['cambio'] as List? ?? [];
+      await w.agregar(cambio);
+      final enCuenta = r['cambioEnCuenta'] as num? ?? 0;
       _carrito.clear();
       await _cargar(); // existencias nuevas
-      if (mounted) _aviso('Pedido #${r['pedidoId']} pagado', 'Total ${dinero(r['total'] as num)}. Los bonos usados salieron de tu wallet.');
+      if (mounted) {
+        _aviso('Pedido #${r['pedidoId']} pagado', [
+          'Total ${dinero(r['total'] as num)}. Los bonos usados salieron de tu wallet.',
+          if (cambio.isNotEmpty) 'Cambio: ${cambio.map((b) => '\$${b['denominacion']}').join(' + ')} en bonos nuevos firmados por el banco.',
+          if (enCuenta > 0) '${dinero(enCuenta)} de cambio se depositaron en tu cuenta (no se forman con bonos).',
+        ].join('\n\n'));
+      }
     } catch (e) {
       if (mounted) _error(e);
     } finally {

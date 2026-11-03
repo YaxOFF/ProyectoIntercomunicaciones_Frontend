@@ -50,7 +50,7 @@ bono dos veces.
 
 ## 6. Compra cifrada (2 min)
 
-1. Tocar **Pagar**. La app elige la combinación exacta ($500 + $100) (`06-pagar.png`).
+1. Tocar **Pagar**. La app elige los bonos que cubren el total con el menor excedente ($500 + $100). Si no hay combinación exacta, el banco devuelve el cambio en bonos nuevos firmados (`06-pagar.png`).
 2. Decir el flujo híbrido (diagrama de `SEGURIDAD.md`): la app genera una llave AES de un solo uso, cifra el
    pedido y los bonos con **AES-256-GCM**, y cifra esa llave con **RSA-OAEP** usando la llave pública de la
    tienda. Solo la tienda puede descifrar. Quien espíe la red ve tres textos en base64.

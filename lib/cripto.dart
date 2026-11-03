@@ -78,21 +78,23 @@ Map<String, String> cifrarPaquete(Map<String, dynamic> pago, RSAPublicKey llaveT
   };
 }
 
-/// Combinación de bonos que suma exactamente [total] (subset-sum por programación dinámica,
-/// prefiere menos bonos). null si no existe.
+/// Bonos para pagar [total]: la suma más chica que lo cubra (exacta si se puede) y, a igual suma,
+/// la de menos bonos. El excedente lo devuelve el banco como cambio. null si el wallet no alcanza.
 List<Map<String, dynamic>>? elegirBonos(List<Map<String, dynamic>> bonos, int total) {
-  // camino[s] = índices de bonos que suman s (el primero en llegar con menos bonos).
+  // camino[s] = índices de bonos que suman s con la menor cantidad encontrada.
   final camino = <int, List<int>>{0: []};
   for (var i = 0; i < bonos.length; i++) {
     final d = bonos[i]['denominacion'] as int;
     for (final s in camino.keys.toList()..sort((a, b) => b - a)) {
+      if (s >= total) continue; // ya cubre: agregar otro bono solo sube la suma
       final n = s + d;
-      if (n > total) continue;
       final nuevo = [...camino[s]!, i];
       if (camino[n] == null || camino[n]!.length > nuevo.length) camino[n] = nuevo;
     }
   }
-  return camino[total]?.map((i) => bonos[i]).toList();
+  final cubren = camino.keys.where((s) => s >= total);
+  if (cubren.isEmpty) return null;
+  return camino[cubren.reduce(min)]!.map((i) => bonos[i]).toList();
 }
 
 SecureRandom _random() {

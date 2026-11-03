@@ -20,13 +20,15 @@ void main() {
     expect(LlaveWallet.abrir('9999', guardado), isNull);
   });
 
-  test('elegirBonos: suma exacta con menos bonos, null si no hay', () {
+  test('elegirBonos: menor suma que cubra, luego menos bonos; null si no alcanza', () {
     final bonos = [for (final d in [100, 50, 20, 20, 20, 500, 300]) {'denominacion': d}];
     int suma(List<Map<String, dynamic>> l) => l.fold(0, (s, b) => s + (b['denominacion'] as int));
     expect(suma(elegirBonos(bonos, 360)!), 360);
     expect(elegirBonos(bonos, 800)!.length, 2); // 500 + 300
     expect(elegirBonos(bonos, 40)!.length, 2);
-    expect(elegirBonos(bonos, 30), isNull);
-    expect(elegirBonos(bonos, 2000), isNull);
+    expect(elegirBonos(bonos, 2000), isNull); // el wallet no alcanza
+    expect(suma(elegirBonos(bonos, 30)!), 40); // sin exacto: el excedente más chico (20 + 20)
+    expect(suma(elegirBonos(bonos, 120)!), 120); // exacto si existe (100 + 20)
+    expect(elegirBonos([for (final d in [500, 20]) {'denominacion': d}], 120)!.single['denominacion'], 500);
   });
 }
